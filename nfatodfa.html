@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>draw shart</title>
+  <script type="text/javascript" src="js/angular/angular.min.js"></script>
+
+  <script type="text/javascript" src="js/go/go.js"></script>
+  <script type="text/javascript" src="js/go/samples.js"></script>
+  <script type="text/javascript" src="js/fromNFAtoDFA.js"></script>
+<style>
+  body {background-color: powderblue;}
+    h3{ color: blue; font-size:1.3em; position:relative; left:600px;}
+
+</style>
+</head>
+
+
+
+<body ng-app="myApp" ng-controller="conv"> 
+                  <h3>NFA   ----->  DFA </h3>
+
+  <div id="myDiagramDiv1" style="width:100%; height:300px; background-color: #DAE4E4;" >
+  </div>
+
+   Ajout etat: <input id="new_state" ng-model="new_state" value="A"  /> 
+    <button id="add_state" style="right:0px;" ng-click="add_state(0)">add state</button>
+       <button id="add_finate_state" style="right:0px;" ng-click="add_state(1)">add finale state</button><br/>
+
+       start state <select name="start" ng-model="start_state" >
+                       <option ng-repeat="state in keys">{{state.key}}</option>
+                   </select><br>
+
+
+    from <select name="from" ng-model="from_state" >
+              <option ng-repeat="state in keys">{{state.key}}</option>
+          </select><br>
+    <br>to<select name="to" ng-model="to_state" >
+                <option ng-repeat="state in keys">{{state.key}}</option>
+          </select>
+    <br> label <input name="text" ng-model="text" >
+
+
+<button id="add_edge" ng-click="add_edge()"> add edge</button><br>
+<button id="convert" ng-click="convert()">convert</button>
+
+ <div id="myDiagramDiv2" style="width:100%; height:300px; background-color: #DAE4E4;" >
+  </div>
+
+
+</body>
+
+<script type="text/javascript">
+var myApp= angular.module("myApp",[])
+
+.controller('conv',function($scope){
+ 
+      $ = go.GraphObject.make;
+      var myDiagram =
+        $(go.Diagram, "myDiagramDiv1",
+          {
+            initialContentAlignment: go.Spot.Center, // center Diagram contents
+            "undoManager.isEnabled": true 
+          });
+       myDiagram.nodeTemplate=
+        $(go.Node, "Horizontal",
+          { background: "#88CCFF" },
+        
+        $(go.TextBlock,
+            "default text",  // string argument can be initial text string
+            {  margin: 12, stroke: "white", font: "bold 16px sans-serif" },
+           
+            new go.Binding("text", "key"))
+        );
+        myDiagram.linkTemplate =
+          $(go.Link,
+            $(go.Shape),                          // this is the link shape (the line)
+            $(go.Shape, { toArrow: "Standard" }),  // this is an arrowhead
+            $(go.TextBlock, { textAlign: "center" },                // this is a Link label
+              new go.Binding("text", "text"))
+          );
+
+           myDiagram.toolManager.resizingTool.handleArchetype =
+    $(go.Shape, "Circle",
+      { width: 10, height: 10, fill: "yellow" });
+  /////////////////////////////////////////////////////
+
+
+  ////////////////////////////////////////////////////////////
+  var keys= [ /*
+                { key: "A" ,finale:true},
+                { key: "B" ,finale:true},
+                { key: "C" ,finale:false},
+                { key: "D" ,finale:true},
+                { key: "E" ,finale:true},
+                { key: "F" ,finale:false},  */
+            ];
+  var links = [ /*
+                {from:"A", to:"B", text:"0"},
+                {from:"B", to:"C",text:"1"},
+                {from:"C", to:"B",text:"0"},
+                {from:"E", to:"F",text:"0"},
+                {from:"C", to:"F",text:"1"},
+                {from:"A", to:"C",text:"0"}  */ 
+              ];
+  $scope.keys=keys;
+  $scope.links=links;
+var div = myDiagram.div;
+div.style.height = '300px';
+myDiagram.requestUpdate();
+/***********************************************************/
+/*********************QuelQues traitements******************/ 
+/***********************************************************/
+
+      $scope.add_state=function add_state(finale)
+      {
+          var obj={};
+          obj["key"]=$scope.new_state;
+          obj["finale"]=finale;
+          if(test_existence(keys,obj))
+          {
+            alert("this state already exist !") ;
+          }else{
+            keys.push(obj); 
+            draw_graph();
+
+          }     
+      }
+/**************************************************************/
+      $scope.add_edge =function add_edge()
+      {
+        var obj={};
+        obj["from"]=$scope.from_state;
+        obj["to"]=$scope.to_state ; 
+        obj["text"]=$scope.text;
+        if(test_existence(links,obj))
+          {
+            alert("this link already exist !") ;
+          }else{
+            links.push(obj); 
+            draw_graph();
+          }   
+      }
+/******************   check if even the element exist ************/
+      function test_existence(list, obj)
+      {
+        var i= list.length;
+        while(i--)
+        {
+            if(JSON.stringify(list[i]) == JSON.stringify(obj))
+              return true
+        }
+        return false;
+      }
+/***********    draw our graph ****************************/
+      function draw_graph() {
+          var model = $(go.GraphLinksModel);
+          model.nodeDataArray = keys ;
+          model.linkDataArray= links ;
+          myDiagram.model = model;
+          myDiagram.layout = new go.ForceDirectedLayout();
+      }
+
+/***********************************************************/
+    $scope.convert = function()
+    { console.log("converting ..");
+      transitions=[];
+      l=$scope.links;
+      for(var i in l)
+      {
+        transitions.push(new trans(l[i].from,l[i].to,l[i].text));
+      }
+
+      start_state=$scope.start_state;
+      fin=[];
+      k=$scope.keys;
+      for(var j in k)
+      {
+        if(k[j].finate==1)
+          fin.push(k[j].key);
+      }
+
+      nfaa= new nfa(start_state,fin,transitions);
+      dfaa=NFAtoDFA1(nfaa);
+      console.log("dfa",dfaa);
+      this.keys=[];
+      this.links=[];
+      for( var i in dfaa.states)
+        { obj={}
+          obj["key"]= dfaa.states[i].sub_states.toString()
+          this.keys.push(obj);
+      }
+      for( var i in dfaa.states)
+      {
+        obj={};
+        obj["from"]= dfaa.transitions[i].from.sub_states.toString();
+        obj["to"]= dfaa.transitions[i].to.toString();
+        obj["text"]=dfaa.transitions[i].alpha;
+        this.links.push(obj);
+      }
+      console.log("links",this.links);
+      console.log("keys",this.keys);
+
+
+
+      if (window.goSamples) goSamples();
+      var myDiagram2 =
+        $(go.Diagram, "myDiagramDiv2",
+          {
+            initialContentAlignment: go.Spot.Center, // center Diagram contents
+             "toolManager.mouseWheelBehavior": go.ToolManager.WheelZoom,
+            "undoManager.isEnabled": true 
+          });
+       myDiagram.nodeTemplate=
+        $(go.Node, "Horizontal",
+          { background: "#88CCFF" },
+        
+        $(go.TextBlock,
+            "default text",  // string argument can be initial text string
+            {  margin: 12, stroke: "white", font: "bold 16px sans-serif" },
+           
+            new go.Binding("text", "key"))
+        );
+        myDiagram.linkTemplate =
+          $(go.Link,
+            $(go.Shape),                          // this is the link shape (the line)
+            $(go.Shape, { toArrow: "Standard" }),  // this is an arrowhead
+            $(go.TextBlock, { textAlign: "center" },                // this is a Link label
+              new go.Binding("text", "text"))
+          );
+
+           myDiagram.toolManager.resizingTool.handleArchetype =
+    $(go.Shape, "Circle",
+      { width: 10, height: 10, fill: "yellow" });
+          var model = $(go.GraphLinksModel);
+          model.nodeDataArray = this.keys ;
+          model.linkDataArray= this.links ;
+          myDiagram.model = model;
+          myDiagram.layout = new go.ForceDirectedLayout();
+
+
+   
+   }   
+
+
+});
+</script>
+
+</html>
+
+
+
+
