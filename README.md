@@ -12,7 +12,7 @@ Ce projet utilise la bibliothéque GOJS :https://gojs.net/latest/index.html
                                   1- convertir afn en afd 
                                   2- convertir une expression reguliere en afn
 ---------------------------------------------------------------------------------------
-                         Execution du projet:
+                                  Execution du projet:
  -->Veuillez lancer la page "home.html" 
  -->choisir le mode de conversion 
 --------------------------------------------------------------------------------------- 
