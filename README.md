@@ -1,10 +1,6 @@
            
- ----------------------------------Groupe du projet:------------------------------------
-                                   
-                                     1-Sara Kididane
-                                     2-Safaa Hazar
-                                     3-Maryam Et-tolba
-                      Filiere:Genie informatique-4eme annee-ENSAK
+                                    
+                                 
 ---------------------------------------------------------------------------------------
 Ce projet utilise la bibliothéque GOJS :https://gojs.net/latest/index.html
 
